@@ -22,9 +22,10 @@ import logging
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QFileDialog, QFrame, QGroupBox, QStatusBar,
-    QSlider, QComboBox, QTextEdit, QCheckBox, QTabWidget, QProgressBar
+    QSlider, QComboBox, QTextEdit, QCheckBox, QTabWidget, QProgressBar, QGridLayout
+
 )
-from PyQt5.QtGui import QImage, QPixmap, QFont
+from PyQt5.QtGui import QImage, QPixmap, QFont, QIcon
 from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
 
 import matplotlib
@@ -439,7 +440,12 @@ class BadmintonAnalyzer(QMainWindow):
         super().__init__()
         self.setWindowTitle("🏸 羽毛球动作分析系统")
         self.setGeometry(100, 100, 1200, 700)
-        self.setStyleSheet("background-color: #f0f0f0; font-family: Arial;")
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #f0f0f0;
+                font-family: "Microsoft YaHei", Arial;
+            }
+        """)
 
         # 初始化线程
         self.thread = VideoThread()
@@ -461,32 +467,119 @@ class BadmintonAnalyzer(QMainWindow):
     def init_ui(self):
         # 主布局
         container = QWidget()
-        layout = QHBoxLayout(container)
+        main_layout = QHBoxLayout(container)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(15)
         self.setCentralWidget(container)
 
-        # 左侧：视频显示
+        # 左侧：视频显示区域
+        video_container = QFrame()
+        video_container.setObjectName("videoContainer")
+        video_container.setStyleSheet("""
+            QFrame#videoContainer {
+                background-color: #2c3e50;
+                border-radius: 10px;
+                border: 2px solid #34495e;
+            }
+        """)
+        video_layout = QVBoxLayout(video_container)
+        video_layout.setContentsMargins(0, 0, 0, 0)
+        video_layout.setSpacing(0)
+        
+        # 视频标题
+        video_title = QLabel("📹 实时视频监控")
+        video_title.setStyleSheet("""
+            color: white; 
+            font-size: 16px; 
+            font-weight: bold; 
+            padding: 12px;
+            background-color: #34495e;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        """)
+        video_title.setAlignment(Qt.AlignCenter)
+        
+        # 视频显示标签
         self.video_label = QLabel()
-        self.video_label.setFixedSize(800, 600)
-        self.video_label.setStyleSheet("background-color: black; border: 2px solid #ccc;")
+        self.video_label.setFixedSize(780, 580)
+        self.video_label.setStyleSheet("""
+            background-color: black; 
+            border: 2px solid #3498db; 
+            border-radius: 5px;
+            margin: 10px;
+        """)
         self.video_label.setAlignment(Qt.AlignCenter)
-
-        # 右侧：控制面板 + 图表
-        right_widget = QWidget()
-        right_layout = QVBoxLayout(right_widget)
-        right_widget.setFixedWidth(380)
+        
+        video_layout.addWidget(video_title)
+        video_layout.addWidget(self.video_label)
+        
+        # 右侧：控制面板区域
+        control_container = QWidget()
+        control_layout = QVBoxLayout(control_container)
+        control_layout.setContentsMargins(0, 0, 0, 0)
+        control_container.setFixedWidth(380)
+        control_container.setStyleSheet("""
+            QWidget {
+                background-color: #ecf0f1;
+                border-radius: 10px;
+                border: 1px solid #bdc3c7;
+            }
+        """)
 
         # 标题
-        title = QLabel("🏸 动作分析面板")
-        title.setFont(QFont("SimHei", 16, QFont.Bold))
+        title = QLabel("🏸 羽毛球动作分析系统")
+        title.setStyleSheet("""
+            color: #2c3e50; 
+            font-size: 18px; 
+            font-weight: bold; 
+            padding: 15px;
+            background-color: #3498db;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        """)
         title.setAlignment(Qt.AlignCenter)
-        right_layout.addWidget(title)
 
         # 标签页控件
         self.tab_widget = QTabWidget()
+        self.tab_widget.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                background-color: white;
+                margin-top: 10px;
+            }
+            QTabBar::tab {
+                background: #bdc3c7;
+                color: #2c3e50;
+                padding: 10px 15px;
+                margin: 2px;
+                border-radius: 5px;
+            }
+            QTabBar::tab:selected {
+                background: #3498db;
+                color: white;
+                font-weight: bold;
+            }
+        """)
         
         # 实时数据展示 tab
         data_widget = QWidget()
         data_layout = QVBoxLayout(data_widget)
+        data_layout.setSpacing(15)
+        data_layout.setContentsMargins(15, 15, 15, 15)
+        
+        # 数据显示面板
+        data_panel = QFrame()
+        data_panel.setStyleSheet("""
+            QFrame {
+                background-color: #ffffff;
+                border: 1px solid #bdc3c7;
+                border-radius: 10px;
+                padding: 15px;
+            }
+        """)
+        data_panel_layout = QVBoxLayout(data_panel)
+        data_panel_layout.setSpacing(10)
         
         self.current_angle_label = QLabel("当前角度: - °")
         self.fps_label = QLabel("FPS: -")
@@ -494,103 +587,285 @@ class BadmintonAnalyzer(QMainWindow):
         self.avg_angle_label = QLabel("平均角度: - °")
         
         for label in [self.current_angle_label, self.fps_label, self.hit_count_label, self.avg_angle_label]:
-            label.setStyleSheet("font-size: 12px; padding: 5px;")
-            data_layout.addWidget(label)
+            label.setStyleSheet("""
+                font-size: 14px; 
+                padding: 8px;
+                color: #2c3e50;
+                border-bottom: 1px dashed #bdc3c7;
+            """)
+            data_panel_layout.addWidget(label)
         
-        # 技术评分进度条
+        # 技术评分面板
+        score_panel = QFrame()
+        score_panel.setStyleSheet("""
+            QFrame {
+                background-color: #ffffff;
+                border: 1px solid #bdc3c7;
+                border-radius: 10px;
+                padding: 15px;
+            }
+        """)
+        score_panel_layout = QVBoxLayout(score_panel)
+        score_panel_layout.setSpacing(10)
+        
+        self.score_label = QLabel("技术评分: -")
+        self.score_label.setStyleSheet("""
+            font-size: 16px; 
+            font-weight: bold; 
+            color: #2c3e50;
+            padding: 5px;
+        """)
+        
         self.score_progress = QProgressBar()
         self.score_progress.setRange(0, 100)
         self.score_progress.setValue(0)
         self.score_progress.setStyleSheet("""
             QProgressBar {
-                border: 2px solid grey;
+                border: 2px solid #bdc3c7;
                 border-radius: 5px;
                 text-align: center;
+                height: 25px;
+                background-color: #f0f0f0;
             }
             QProgressBar::chunk {
-                background-color: #3add36;
-                width: 20px;
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0,
+                                                  stop: 0 #2ecc71, stop: 1 #1abc9c);
+                border-radius: 3px;
             }
         """)
-        self.score_label = QLabel("技术评分: -")
-        data_layout.addWidget(self.score_label)
-        data_layout.addWidget(self.score_progress)
         
-        data_widget.setLayout(data_layout)
-        self.tab_widget.addTab(data_widget, "实时数据")
-
+        score_panel_layout.addWidget(self.score_label)
+        score_panel_layout.addWidget(self.score_progress)
+        
+        data_layout.addWidget(data_panel)
+        data_layout.addWidget(score_panel)
+        
         # 专业建议 tab
         advice_widget = QWidget()
         advice_layout = QVBoxLayout(advice_widget)
+        advice_layout.setSpacing(10)
+        advice_layout.setContentsMargins(15, 15, 15, 15)
+        
+        advice_title = QLabel("💡 专业建议")
+        advice_title.setStyleSheet("""
+            font-size: 16px; 
+            font-weight: bold; 
+            color: #2c3e50;
+            padding: 10px;
+        """)
+        
         self.advice_text = QTextEdit()
         self.advice_text.setReadOnly(True)
-        self.advice_text.setStyleSheet("background-color: #fffbe6; font-size: 12px;")
-        advice_layout.addWidget(self.advice_text)
-        advice_widget.setLayout(advice_layout)
-        self.tab_widget.addTab(advice_widget, "专业建议")
+        self.advice_text.setStyleSheet("""
+            QTextEdit {
+                background-color: #fffbe6; 
+                font-size: 13px;
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                padding: 10px;
+            }
+        """)
         
-        right_layout.addWidget(self.tab_widget)
-
+        advice_layout.addWidget(advice_title)
+        advice_layout.addWidget(self.advice_text)
+        
+        self.tab_widget.addTab(data_widget, "📈 实时数据")
+        self.tab_widget.addTab(advice_widget, "🎓 专业建议")
+        
+        # 图表区域
+        chart_container = QFrame()
+        chart_container.setStyleSheet("""
+            QFrame {
+                background-color: white;
+                border: 1px solid #bdc3c7;
+                border-radius: 10px;
+                padding: 10px;
+                margin-top: 10px;
+            }
+        """)
+        chart_layout = QVBoxLayout(chart_container)
+        chart_layout.setContentsMargins(5, 5, 5, 5)
+        chart_layout.setSpacing(5)
+        
+        chart_title = QLabel("📊 右臂夹角变化图")
+        chart_title.setStyleSheet("""
+            font-size: 14px; 
+            font-weight: bold; 
+            color: #2c3e50;
+            padding: 5px;
+        """)
+        
         # 图表
-        self.figure = Figure(figsize=(5, 4), dpi=100)
+        self.figure = Figure(figsize=(5, 3), dpi=100)
         self.canvas = FigureCanvas(self.figure)
         self.ax = self.figure.add_subplot(111)
         self.ax.set_ylim(60, 180)
         self.ax.set_xlim(0, 100)
-        self.ax.set_title("右臂夹角变化")
-        self.ax.set_ylabel("角度 (°)")
-        self.ax.grid(True)
-        right_layout.addWidget(self.canvas)
-
-        # 参数设置
-        settings_group = QGroupBox("参数设置")
+        self.ax.set_title("右臂夹角变化", fontsize=12)
+        self.ax.set_ylabel("角度 (°)", fontsize=10)
+        self.ax.grid(True, linestyle='--', alpha=0.7)
+        
+        chart_layout.addWidget(chart_title)
+        chart_layout.addWidget(self.canvas)
+        
+        # 参数设置区域
+        settings_group = QGroupBox("⚙️ 参数设置")
+        settings_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #bdc3c7;
+                border-radius: 10px;
+                margin-top: 1ex;
+                padding-top: 10px;
+                background-color: white;
+            }
+            QGroupBox::title {
+                subline-offset: -2px;
+                padding: 5px;
+                color: #2c3e50;
+            }
+        """)
         settings_layout = QVBoxLayout()
+        settings_layout.setSpacing(15)
+        settings_layout.setContentsMargins(15, 15, 15, 15)
         
         # 击球检测阈值
         hit_threshold_layout = QHBoxLayout()
-        hit_threshold_layout.addWidget(QLabel("击球检测阈值:"))
+        hit_threshold_label = QLabel("击球检测阈值:")
+        hit_threshold_label.setStyleSheet("font-size: 12px;")
         self.hit_threshold_slider = QSlider(Qt.Horizontal)
         self.hit_threshold_slider.setMinimum(60)
         self.hit_threshold_slider.setMaximum(120)
         self.hit_threshold_slider.setValue(90)
-        self.hit_threshold_slider.valueChanged.connect(self.update_hit_threshold)
+        self.hit_threshold_slider.setStyleSheet("""
+            QSlider::groove:horizontal {
+                border: 1px solid #bbb;
+                background: #e0e0e0;
+                height: 8px;
+                border-radius: 4px;
+            }
+            QSlider::handle:horizontal {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                            stop:0 #3498db, stop:1 #2980b9);
+                border: 1px solid #5c5c5c;
+                width: 18px;
+                margin: -2px 0;
+                border-radius: 3px;
+            }
+        """)
+        hit_threshold_layout.addWidget(hit_threshold_label)
         hit_threshold_layout.addWidget(self.hit_threshold_slider)
         settings_layout.addLayout(hit_threshold_layout)
         
         # 引拍检测阈值
         swing_threshold_layout = QHBoxLayout()
-        swing_threshold_layout.addWidget(QLabel("引拍检测阈值:"))
+        swing_threshold_label = QLabel("引拍检测阈值:")
+        swing_threshold_label.setStyleSheet("font-size: 12px;")
         self.swing_threshold_slider = QSlider(Qt.Horizontal)
         self.swing_threshold_slider.setMinimum(120)
         self.swing_threshold_slider.setMaximum(180)
         self.swing_threshold_slider.setValue(150)
-        self.swing_threshold_slider.valueChanged.connect(self.update_swing_threshold)
+        self.swing_threshold_slider.setStyleSheet("""
+            QSlider::groove:horizontal {
+                border: 1px solid #bbb;
+                background: #e0e0e0;
+                height: 8px;
+                border-radius: 4px;
+            }
+            QSlider::handle:horizontal {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                            stop:0 #3498db, stop:1 #2980b9);
+                border: 1px solid #5c5c5c;
+                width: 18px;
+                margin: -2px 0;
+                border-radius: 3px;
+            }
+        """)
+        swing_threshold_layout.addWidget(swing_threshold_label)
         swing_threshold_layout.addWidget(self.swing_threshold_slider)
         settings_layout.addLayout(swing_threshold_layout)
         
         # 检测灵敏度
         sensitivity_layout = QHBoxLayout()
-        sensitivity_layout.addWidget(QLabel("检测灵敏度:"))
+        sensitivity_label = QLabel("检测灵敏度:")
+        sensitivity_label.setStyleSheet("font-size: 12px;")
         self.sensitivity_slider = QSlider(Qt.Horizontal)
         self.sensitivity_slider.setMinimum(10)
         self.sensitivity_slider.setMaximum(50)
         self.sensitivity_slider.setValue(20)
-        self.sensitivity_slider.valueChanged.connect(self.update_sensitivity)
+        self.sensitivity_slider.setStyleSheet("""
+            QSlider::groove:horizontal {
+                border: 1px solid #bbb;
+                background: #e0e0e0;
+                height: 8px;
+                border-radius: 4px;
+            }
+            QSlider::handle:horizontal {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                            stop:0 #3498db, stop:1 #2980b9);
+                border: 1px solid #5c5c5c;
+                width: 18px;
+                margin: -2px 0;
+                border-radius: 3px;
+            }
+        """)
+        sensitivity_layout.addWidget(sensitivity_label)
         sensitivity_layout.addWidget(self.sensitivity_slider)
         settings_layout.addLayout(sensitivity_layout)
         
         # 检测模式选择
         self.detection_mode_checkbox = QCheckBox("使用高级检测算法")
         self.detection_mode_checkbox.setChecked(True)
-        self.detection_mode_checkbox.stateChanged.connect(self.toggle_detection_mode)
+        self.detection_mode_checkbox.setStyleSheet("""
+            QCheckBox {
+                spacing: 5px;
+                font-size: 12px;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+            }
+            QCheckBox::indicator:unchecked {
+                border: 2px solid #bdc3c7;
+                border-radius: 3px;
+                background-color: white;
+            }
+            QCheckBox::indicator:checked {
+                border: 2px solid #3498db;
+                border-radius: 3px;
+                background-color: #3498db;
+            }
+        """)
         settings_layout.addWidget(self.detection_mode_checkbox)
         
         settings_group.setLayout(settings_layout)
-        right_layout.addWidget(settings_group)
-
+        
         # 控制按钮组
-        btn_group = QGroupBox("控制")
+        btn_group = QGroupBox("🎮 控制")
+        btn_group.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #bdc3c7;
+                border-radius: 10px;
+                margin-top: 1ex;
+                padding-top: 10px;
+                background-color: white;
+            }
+            QGroupBox::title {
+                subline-offset: -2px;
+                padding: 5px;
+                color: #2c3e50;
+            }
+        """)
         btn_layout = QVBoxLayout()
+        btn_layout.setSpacing(10)
+        btn_layout.setContentsMargins(15, 15, 15, 15)
+        
+        # 按钮容器
+        buttons_container = QWidget()
+        buttons_layout = QGridLayout(buttons_container)
+        buttons_layout.setSpacing(10)
+        
         self.btn_start = QPushButton("▶️ 开始分析")
         self.btn_pause = QPushButton("⏸️ 暂停分析")
         self.btn_stop = QPushButton("⏹️ 停止分析")
@@ -598,17 +873,55 @@ class BadmintonAnalyzer(QMainWindow):
         self.btn_open = QPushButton("📂 打开视频")
         self.btn_load_history = QPushButton("📊 加载历史数据")
         self.btn_generate_report = QPushButton("📑 生成报告")
-
+        
+        button_style = """
+            QPushButton {
+                padding: 12px;
+                font-size: 14px;
+                font-weight: bold;
+                border-radius: 8px;
+                border: 2px solid #3498db;
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                  stop: 0 #3498db, stop: 1 #2980b9);
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                  stop: 0 #3cb0fd, stop: 1 #3498db);
+            }
+            QPushButton:pressed {
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                  stop: 0 #2980b9, stop: 1 #3498db);
+            }
+        """
+        
+        # 设置按钮样式
         for btn in [self.btn_start, self.btn_pause, self.btn_stop, self.btn_save, 
                    self.btn_open, self.btn_load_history, self.btn_generate_report]:
-            btn.setStyleSheet("padding: 10px; font-size: 14px;")
-            btn_layout.addWidget(btn)
+            btn.setStyleSheet(button_style)
+        
+        # 布局按钮
+        buttons_layout.addWidget(self.btn_start, 0, 0)
+        buttons_layout.addWidget(self.btn_pause, 0, 1)
+        buttons_layout.addWidget(self.btn_stop, 1, 0)
+        buttons_layout.addWidget(self.btn_save, 1, 1)
+        buttons_layout.addWidget(self.btn_open, 2, 0)
+        buttons_layout.addWidget(self.btn_load_history, 2, 1)
+        buttons_layout.addWidget(self.btn_generate_report, 3, 0, 1, 2)
+        
+        btn_layout.addWidget(buttons_container)
         btn_group.setLayout(btn_layout)
-        right_layout.addWidget(btn_group)
-
+        
+        # 添加到右侧布局
+        control_layout.addWidget(title)
+        control_layout.addWidget(self.tab_widget)
+        control_layout.addWidget(chart_container)
+        control_layout.addWidget(settings_group)
+        control_layout.addWidget(btn_group)
+        
         # 添加到主布局
-        layout.addWidget(self.video_label)
-        layout.addWidget(right_widget)
+        main_layout.addWidget(video_container)
+        main_layout.addWidget(control_container)
 
         # 初始化图表数据
         self.x_data = []
@@ -667,7 +980,7 @@ class BadmintonAnalyzer(QMainWindow):
             bytes_per_line = ch * w
             qt_image = QImage(cv_img.data, w, h, bytes_per_line, QImage.Format_RGB888)
             pixmap = QPixmap.fromImage(qt_image)
-            self.video_label.setPixmap(pixmap.scaled(self.video_label.size(), Qt.KeepAspectRatio))
+            self.video_label.setPixmap(pixmap.scaled(self.video_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
         except Exception as e:
             logger.error(f"更新图像时出错: {str(e)}")
 
@@ -681,10 +994,10 @@ class BadmintonAnalyzer(QMainWindow):
             self.ax.axhline(y=self.hit_threshold_slider.value(), color='r', linestyle='--', label='击球区间')
             self.ax.set_ylim(60, 180)
             self.ax.set_xlim(max(0, len(self.x_data) - 100), len(self.x_data))
-            self.ax.set_title("右臂夹角变化")
-            self.ax.set_ylabel("角度 (°)")
-            self.ax.legend()
-            self.ax.grid(True)
+            self.ax.set_title("右臂夹角变化", fontsize=12)
+            self.ax.set_ylabel("角度 (°)", fontsize=10)
+            self.ax.legend(fontsize=9)
+            self.ax.grid(True, linestyle='--', alpha=0.7)
             self.canvas.draw()
         except Exception as e:
             logger.error(f"更新图表时出错: {str(e)}")
@@ -762,8 +1075,8 @@ class BadmintonAnalyzer(QMainWindow):
         self.ax.clear()
         self.ax.set_ylim(60, 180)
         self.ax.set_xlim(0, 100)
-        self.ax.set_title("右臂夹角变化")
-        self.ax.grid(True)
+        self.ax.set_title("右臂夹角变化", fontsize=12)
+        self.ax.grid(True, linestyle='--', alpha=0.7)
         self.canvas.draw()
         
         # 重置统计数据标签
